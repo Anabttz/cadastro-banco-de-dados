@@ -1,136 +1,163 @@
 
 import mysql.connector
 
-conexao = mysql.connector.connect(
-    host='localhost',
-    user='root',
-    password='',
-    database=''
-)
-
-cursor= conexao.cursor()
-
-def cadastrar():
-    Nome= input('Nome: ').strip()
-    if not Nome:
-        print('Nome é obrigatório.')
-        return
-
-    try:
-        Idade= int(input('Idade: '))
-    except ValueError:
-        print('A idade deve ser um número')
-        return
-    
-    if Idade <= 0:
-           print('A idade deve ser maior que 0.')
-           return
-
-    Cpf= input('CPF: ').strip()
-    if not Cpf:
-        print('CPF é obrigatório.')
-        return
-
-    Email= input('E-mail: ').strip()
-    if not Email:
-        print('E-mail é obrigatório. ')
-        return
-
-    cursor.execute('INSERT INTO cadastro (Nome, Idade, Cpf, Email) VALUES(%s, %s, %s, %s)',(Nome, Idade, Cpf, Email))
-    conexao.commit()
-    print('Cadastro realizado com sucesso!')
-
-
-def listar():
-    cursor.execute('SELECT * FROM cadastro')
-    cadastro= cursor.fetchall()
-
-
-    if not cadastro:
-        print('Nenhum cadastro encontrado.')
-
-    else:
-        print('\\------ CADASTROS ------')
-
-        for linha in cadastro:
-            print(f'ID: {linha[0]} Nome: {linha[1]} Idade:{linha[2]} Cpf: {linha[3]} E-mail: {linha[4]}')
-
-        print('--------------------------------')
-
-
-def atualizar():
-    listar()
-    try:
-        Cpf= int(input('Digite o CPF do usuário que deseja atualizar: '))
-    except ValueError:
-        print('CPF inválido')
-        return
-    
-    novo_nome= input('Nome atualizado: (Deixe vazio para não alterar.)').strip()
-    nova_idade= input('Idade: Deixe vazio para não alterar').strip()
-    novo_email= input('E-mail: (Deixe vazio para não alterar)').strip()
-
-    if nova_idade:
+class Database:
+    def __init__(self, host='localhost', user='root', password='', database=''):
         try:
-            nova_idade= int(nova_idade)
-        except ValueError:
-            print('Idade inválida!')
+            self.conexao = mysql.connector.connect(
+                host=host,
+                user=user,
+                password=password,
+                database=database
+            )
+            self.cursor = self.conexao.cursor()
+            print('Conectado ao MySQL com sucesso!')
+        except mysql.connector.Error as erro:
+            print('Erro ao conectar ao MySQL:', erro)
+
+    def executar(self, comando, valores=None):
+        self.cursor.execute(comando, valores or ())
+        self.conexao.commit()
+
+    def buscar(self, comando, valores=None):
+        self.cursor.execute(comando, valores or ())
+        return self.cursor.fetchall()
+
+    def fechar(self):
+        self.cursor.close()
+        self.conexao.close()
+
+
+class Cadastro:
+    def __init__(self, db: Database):
+        self.db = db
+
+    def cadastrar(self):
+        nome = input('Nome: ').strip()
+        if not nome:
+            print('Nome é obrigatório.')
             return
 
-    cursor.execute('SELECT Nome, Idade, Email FROM cadastro WHERE CPF = %s', (Cpf,))
-    usuario= cursor.fetchone()
+        try:
+            idade = int(input('Idade: '))
+        except ValueError:
+            print('A idade deve ser um número.')
+            return
+
+        if idade <= 0:
+            print('A idade deve ser maior que 0.')
+            return
+
+        cpf = input('CPF: ').strip()
+        if not cpf:
+            print('CPF é obrigatório.')
+            return
+
+        email = input('E-mail: ').strip()
+        if not email:
+            print('E-mail é obrigatório.')
+            return
+
+        self.db.executar(
+            'INSERT INTO cadastro (Nome, Idade, Cpf, Email) VALUES (%s, %s, %s, %s)',
+            (nome, idade, cpf, email)
+        )
+        print('Cadastro realizado com sucesso!')
+
+    def listar(self):
+        cadastros = self.db.buscar('SELECT * FROM cadastro')
+
+        if not cadastros:
+            print('Nenhum cadastro encontrado.')
+        else:
+            print('\n------ CADASTROS ------')
+            for linha in cadastros:
+                print(f'ID: {linha[0]} | Nome: {linha[1]} | Idade: {linha[2]} | CPF: {linha[3]} | E-mail: {linha[4]}')
+            print('-----------------------')
+
+    def atualizar(self):
+        self.listar()
+        cpf = input('Digite o CPF do usuário que deseja atualizar: ').strip()
+
+        if not cpf:
+            print('CPF inválido!')
+            return
+
+        novo_nome = input('Nome atualizado (deixe vazio para não alterar): ').strip()
+        nova_idade = input('Idade atualizada (deixe vazio para não alterar): ').strip()
+        novo_email = input('E-mail atualizado (deixe vazio para não alterar): ').strip()
+
+        if nova_idade:
+            try:
+                nova_idade = int(nova_idade)
+            except ValueError:
+                print('Idade inválida!')
+                return
+
+        usuario = self.db.buscar('SELECT Nome, Idade, Email FROM cadastro WHERE CPF = %s', (cpf,))
+        if not usuario:
+            print('Usuário não encontrado!')
+            return
+
+        usuario = usuario[0]
+        nome_final = novo_nome or usuario[0]
+        idade_final = nova_idade or usuario[1]
+        email_final = novo_email or usuario[2]
+
+        self.db.executar(
+            'UPDATE cadastro SET Nome=%s, Idade=%s, Email=%s WHERE CPF=%s',
+            (nome_final, idade_final, email_final, cpf)
+        )
+        print('Cadastro atualizado com sucesso!')
+
+    def deletar(self):
+        self.listar()
+        id_cadastro = input('Digite o ID do cadastro que deseja excluir: ').strip()
+
+        if not id_cadastro:
+            print('ID inválido!')
+            return
+
+        self.db.executar('DELETE FROM cadastro WHERE ID = %s', (id_cadastro,))
+        print('Cadastro deletado com sucesso!')
 
 
-    if not usuario:
-        print('Usuário não encontrado!')
-        return
+class Sistema:
+    def __init__(self):
+        self.db = Database(database='dados')
+        self.cadastro = Cadastro(self.db)
 
-    nome_final = novo_nome if novo_nome else usuario [0]
-    idade_final = nova_idade if nova_idade else usuario[1]
-    email_final = novo_email if novo_email else usuario[2]
+    def menu(self):
+        while True:
+            print('\n=== MENU PRINCIPAL ===')
+            print('1 - Cadastrar usuário')
+            print('2 - Listar cadastros')
+            print('3 - Atualizar cadastro')
+            print('4 - Deletar usuário')
+            print('5 - Sair')
 
-    cursor.execute('UPDATE cadastro SET Nome=%s, Idade=%s, Email=%s WHERE CPF=%s',(nome_final, idade_final, email_final, Cpf))
+            opcao = input('Escolha uma opção: ')
 
-    conexao.commit()
-    print('Cadastro atualizado com sucesso')
+            if opcao == '1':
+                self.cadastro.cadastrar()
+            elif opcao == '2':
+                self.cadastro.listar()
+            elif opcao == '3':
+                self.cadastro.atualizar()
+            elif opcao == '4':
+                self.cadastro.deletar()
+            elif opcao == '5':
+                print('Encerrando o sistema...')
+                self.db.fechar()
+                break
+            else:
+                print('Opção inválida!')
 
-def deletar():
-    listar()
-    try:
-        id_cadastro= input('Digite o ID do cadastro que deseja excluir')
-    except ValueError:
-        print('ID inválido!')
-        return
-    
-    cursor.execute('DELETE FROM cadastro WHERE ID= %s', (id_cadastro,))
 
-    conexao.commit()
-    print('Cadastro deletado com sucesso!')
+if __name__ == '__main__':
+    sistema = Sistema()
+    sistema.menu()
 
-while True:
-    print('\n=== MENU PRINCIPAL ===')
-    print('1 - Cadastrar usuário')
-    print('2 - Listar cadastros')
-    print('3 - Atualizar cadastro')
-    print('4 - Deletar usuário')
-    print('5 - Sair')
-
-    opcao= input('Escolha uma opção: ')
-
-    if opcao == '1':
-        cadastrar()
-    elif opcao == '2':
-        listar()
-    elif opcao == '3':
-        atualizar()
-    elif opcao == '4':
-        deletar()
-    elif opcao == '5':
-        print('Encerrando o sistema...')
-        break
-
-cursor.close()
-conexao.close()
 
 
 
