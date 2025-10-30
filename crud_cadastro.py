@@ -169,10 +169,6 @@ class Sistema:
             else:
                 print('Opção inválida!')
 
-
-# ===============================
-# Execução principal
-# ===============================
 if __name__ == '__main__':
     sistema = Sistema()
     sistema.menu()
