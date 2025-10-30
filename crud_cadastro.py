@@ -5,9 +5,9 @@ class Database:
     def __init__(self, host='localhost', user='root', password='SENHA_AQUI', database='dados'):
         try:
             self.conexao = mysql.connector.connect(
-                host='127.0.0.1',
-                user= 'root',
-                password= '789821'
+                host='',
+                user= '',
+                password= ''
             )
             self.cursor = self.conexao.cursor()
 
