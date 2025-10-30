@@ -2,22 +2,38 @@
 import mysql.connector
 
 class Database:
-    def __init__(self, host='localhost', user='root', password='', database=''):
+    def __init__(self, host='localhost', user='root', password='SENHA_AQUI', database='dados'):
         try:
             self.conexao = mysql.connector.connect(
-                host=host,
-                user=user,
-                password=password,
-                database=database
+                host='127.0.0.1',
+                user= 'root',
+                password= '789821'
             )
             self.cursor = self.conexao.cursor()
-            print('Conectado ao MySQL com sucesso!')
+
+            self.cursor.execute(f"CREATE DATABASE IF NOT EXISTS {database}")
+            self.conexao.database = database
+
+            self.cursor.execute("""
+                CREATE TABLE IF NOT EXISTS cadastro (
+                    ID INT AUTO_INCREMENT PRIMARY KEY,
+                    Nome VARCHAR(100) NOT NULL,
+                    Idade INT NOT NULL,
+                    Cpf VARCHAR(14) NOT NULL UNIQUE,
+                    Email VARCHAR(100) NOT NULL
+                )
+            """)
+            self.conexao.commit()
+
         except mysql.connector.Error as erro:
-            print('Erro ao conectar ao MySQL:', erro)
+            print(f"Erro ao conectar ao banco: {erro}")
 
     def executar(self, comando, valores=None):
-        self.cursor.execute(comando, valores or ())
-        self.conexao.commit()
+        try:
+            self.cursor.execute(comando, valores or ())
+            self.conexao.commit()
+        except mysql.connector.Error as erro:
+            print(f"Erro ao executar comando: {erro}")
 
     def buscar(self, comando, valores=None):
         self.cursor.execute(comando, valores or ())
@@ -83,9 +99,9 @@ class Cadastro:
             print('CPF inválido!')
             return
 
-        novo_nome = input('Nome atualizado (deixe vazio para não alterar): ').strip()
-        nova_idade = input('Idade atualizada (deixe vazio para não alterar): ').strip()
-        novo_email = input('E-mail atualizado (deixe vazio para não alterar): ').strip()
+        novo_nome = input('Nome a atualizar (deixe vazio para não alterar): ').strip()
+        nova_idade = input('Idade a atualizar (deixe vazio para não alterar): ').strip()
+        novo_email = input('E-mail a atualizar (deixe vazio para não alterar): ').strip()
 
         if nova_idade:
             try:
@@ -112,13 +128,13 @@ class Cadastro:
 
     def deletar(self):
         self.listar()
-        id_cadastro = input('Digite o ID do cadastro que deseja excluir: ').strip()
+        cpf_cadastro = input('Digite o CPF do usuário que deseja excluir: ').strip()
 
-        if not id_cadastro:
-            print('ID inválido!')
+        if not cpf_cadastro:
+            print('CPF inválido!')
             return
 
-        self.db.executar('DELETE FROM cadastro WHERE ID = %s', (id_cadastro,))
+        self.db.executar('DELETE FROM cadastro WHERE ID = %s', (cpf_cadastro,))
         print('Cadastro deletado com sucesso!')
 
 
@@ -154,21 +170,12 @@ class Sistema:
                 print('Opção inválida!')
 
 
+# ===============================
+# Execução principal
+# ===============================
 if __name__ == '__main__':
     sistema = Sistema()
     sistema.menu()
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
