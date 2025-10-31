@@ -13,7 +13,7 @@ O sistema permite cadastrar, listar, atualizar e deletar registros, funcionando 
 * Tratamento de erros e validação de dados.  
 
 
-## tecnologias utilizadas
+## Tecnologias utilizadas
 
 - Python 3.10+
 
