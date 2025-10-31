@@ -1,4 +1,4 @@
-# 🗂️ Sistema de Cadastro com MySQL em Python
+# 🗂️ Sistema de Cadastro com MySQL e Python
 
 Um projeto simples e funcional de cadastro de usuários desenvolvido em Python com integração ao banco de dados MySQL.
 O sistema permite cadastrar, listar, atualizar e deletar registros, funcionando diretamente no terminal.
